@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { default: mongoose } = require('mongoose');
 require('dotenv').config();
-const userSchema = require('../Router/userSchema.js');
+const userSchema = require('../Models/userSchema.js');
 
 router.get('/', (req , res) => {
     res.send(`Hello from Express Shuttle Services`)
@@ -25,13 +25,5 @@ router.post('/api/users', async (req, res) => {
 //Fetching all Users Info
 
 //Fetching Single User Info
-
-
-
-//Creating Drop Off and Pick Up Location
-
-//Deleting Drop Off and Pick Up Location
-
-//Updating Drop off and Pick Up Location
 
 module.exports = router;

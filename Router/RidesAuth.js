@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { default: mongoose } = require('mongoose');
 require('dotenv').config();
-const rideSchema = require('../Router/RideSchema.js');
+const rideSchema = require('../Models/RideSchema.js');
 const moment = require('moment');
 const stripe = Stripe('your_stripe_secret_key');
 

@@ -7,6 +7,7 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(require('./Router/UsersAuth'));
 app.use(require('./Router/RidesAuth'));
+app.use(require('./Router/LocationAuth'));
 
 app.listen(5000, () => {
     console.log(`server is running at port 5000`);
