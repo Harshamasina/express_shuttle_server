@@ -10,7 +10,7 @@ router.get('/', (req , res) => {
     res.send(`Hello from Express Shuttle Services`)
 });
 
-// Posting users info
+//Posting users info
 router.post('/api/users', async (req, res) => {
     try {
         const user = new userSchema(req.body);
@@ -24,12 +24,14 @@ router.post('/api/users', async (req, res) => {
     }
 });
 
+//Fetching User Info
+
 //Posting Rides
 router.post('/api/rides', async (req, res) => {
     const { amount, currency, source, user_id, ...rideDetails } = req.body;
 
     try {
-        const user = await UserModel.findById(user_id);
+        const user = await userSchema.findById(user_id);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -42,7 +44,7 @@ router.post('/api/rides', async (req, res) => {
         });
 
         if (paymentIntent.status === 'succeeded') {
-            const new_ride = new RidesModel({
+            const new_ride = new rideSchema({
                 ...rideDetails,
                 payment: amount,
                 payment_confirm: 1,
@@ -86,5 +88,15 @@ router.post('/api/rides', async (req, res) => {
         });
     }
 });
+
+//Fetching Rides Data
+
+// Updating Rides Data
+
+//Creating Drop Off and Pick Up Location
+
+//Deleting Drop Off and Pick Up Location
+
+//Updating Drop off and Pick Up Location
 
 module.exports = router;
