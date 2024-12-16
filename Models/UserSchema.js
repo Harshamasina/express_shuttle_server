@@ -19,6 +19,12 @@ const pastRidesSchema = new mongoose.Schema({
     drop_off: {
         type: String
     },
+    return_pick_up: {
+        type: String
+    },
+    return_drop_off: {
+        type: String
+    },
     payment: {
         type: Number
     },
@@ -30,25 +36,32 @@ const pastRidesSchema = new mongoose.Schema({
 const UserSchema = new mongoose.Schema(
     {
         first_name: {
-            type: String
+            type: String,
+            required: true
         },
         last_name: {
-            type: String
+            type: String,
+            required: true
         },
         phone: {
-            type: Number
+            type: Number,
+            required: true
         },
         email: {
-            type: String
+            type: String,
+            required: true
         },
         address: {
-            type: String
+            type: String,
+            required: true
         },
         dob: {
-            type: Date
+            type: Date,
+            required: true
         },
         user_type: {
-            type: String
+            type: String,
+            required: true
         },
         past_rides: [pastRidesSchema]
     },

@@ -1,26 +1,45 @@
 const mongoose = require('mongoose');
 
-const pastRidesSchema = new mongoose.Schema({
+const RidesSchema = new mongoose.Schema({
     payment: {
-        type: Number
+        type: Number,
+        required: true
     },
     payment_confirm: {
-        type: String
+        type: Number,
+        required: true
     },
     payment_ref_id: {
-        type: String
+        type: String,
+        required: true
     },
     booking_date: {
-        type: String
+        type: String,
+        required: true
     },
     pick_up: {
-        type: String
+        type: String,
+        required: true
     },
     pick_up_date: {
-        type: String
+        type: String,
+        required: true
     },
     pick_up_time: {
-        type: String
+        type: String,
+        required: true
+    },
+    drop_off: {
+        type: String,
+        required: true
+    },
+    drop_off_date: {
+        type: String,
+        required: true
+    },
+    drop_off_time: {
+        type: String,
+        required: true
     },
     return_pick_up: {
         type: String
@@ -31,25 +50,40 @@ const pastRidesSchema = new mongoose.Schema({
     return_pick_up_time: {
         type: String
     },
+    return_drop_off: {
+        type: String
+    },
+    return_drop_off_date: {
+        type: String
+    },
+    return_drop_off_time: {
+        type: String
+    },
     flight_no: {
         type: String
     },
-    booking_date: {
-        type: String
+    acc_id: {
+        type: String,
+        required: true
     },
-    user_id: {
-        type: String
+    traveler_count: {
+        type: Number,
+        required: true
     },
-    user_name: {
-        type: String
+    travelers: {
+        type: Array,
+        required: true
     },
-    user_email: {
-        type: String
+    acc_email: {
+        type: String,
+        required: true
     },
-    user_phone: {
-        type: String
-    },
-});
+    acc_phone: {
+        type: String,
+        required: true
+    }
+},
+{timestamps: true});
 
-const RidesModel = mongoose.model('', pastRidesSchema);
+const RidesModel = mongoose.model('', RidesSchema);
 module.exports = RidesModel;
