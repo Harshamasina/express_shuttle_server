@@ -44,19 +44,24 @@ const UserSchema = new mongoose.Schema(
             required: true
         },
         phone: {
-            type: Number,
+            type: String,
             required: true
         },
         email: {
             type: String,
-            required: true
+            required: true,
+            unique: true
         },
         address: {
             type: String,
             required: true
         },
+        password: {
+            type: String,
+            required: true
+        },
         dob: {
-            type: Date,
+            type: String,
             required: true
         },
         user_type: {

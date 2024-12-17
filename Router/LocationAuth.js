@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { default: mongoose } = require('mongoose');
 require('dotenv').config();
 const locationSchema = require('../Models/LocationSchema');
 
