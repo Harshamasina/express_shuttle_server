@@ -18,9 +18,9 @@ const LocationSchema = new mongoose.Schema({
         required: true
     },
     location_active: {
-        type: Boolean
+        type: String
     }
 });
 
-const RidesModel = mongoose.model('locations', LocationSchema);
-module.exports = RidesModel;
+const LocationModel = mongoose.model('locations', LocationSchema);
+module.exports = LocationModel;

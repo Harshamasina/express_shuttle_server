@@ -19,9 +19,7 @@ router.post('/api/users', async (req, res) => {
                 error: "User already exists",
             });
         }
-
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const user = new UserModel({
             ...req.body,
             password: hashedPassword,
@@ -32,7 +30,7 @@ router.post('/api/users', async (req, res) => {
             data: savedUser,
         });
     } catch (err) {
-        console.log(err);
+        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to add user information",
@@ -71,7 +69,7 @@ router.get('/api/search_user/:search', async(req, res) => {
             res.status(200).json(userData);
         }
     } catch (err) {
-        console.log(err);
+        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user information",

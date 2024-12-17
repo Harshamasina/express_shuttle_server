@@ -6,7 +6,7 @@ const rideSchema = require('../Models/RideSchema.js');
 const moment = require('moment');
 // const stripe = Stripe('your_stripe_secret_key');
 
-//Posting Rides
+// Posting Rides
 // router.post('/api/rides', async (req, res) => {
 //     const { amount, currency, source, user_id, ...rideDetails } = req.body;
 
