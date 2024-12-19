@@ -7,7 +7,8 @@ const LocationSchema = new mongoose.Schema({
     },
     location_code: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
     },
     location_link: {
         type: String,
@@ -18,6 +19,9 @@ const LocationSchema = new mongoose.Schema({
         required: true
     },
     location_active: {
+        type: String
+    },
+    location_town: {
         type: String
     }
 });

@@ -30,7 +30,7 @@ router.post('/api/users', async (req, res) => {
             data: savedUser,
         });
     } catch (err) {
-        // console.log(err);
+        console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to add user information",

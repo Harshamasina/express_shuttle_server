@@ -35,15 +35,11 @@ const pastRidesSchema = new mongoose.Schema({
 
 const UserSchema = new mongoose.Schema(
     {
-        first_name: {
+        name: {
             type: String,
             required: true
         },
-        last_name: {
-            type: String,
-            required: true
-        },
-        phone: {
+        dob: {
             type: String,
             required: true
         },
@@ -52,7 +48,7 @@ const UserSchema = new mongoose.Schema(
             required: true,
             unique: true
         },
-        address: {
+        phone: {
             type: String,
             required: true
         },
@@ -60,7 +56,7 @@ const UserSchema = new mongoose.Schema(
             type: String,
             required: true
         },
-        dob: {
+        address: {
             type: String,
             required: true
         },

@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const RidesSchema = new mongoose.Schema({
+    ticket_id: {
+        type: String,
+        required: true
+    },
     payment: {
         type: Number,
         required: true
@@ -70,15 +74,11 @@ const RidesSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    travelers: {
-        type: Array,
-        required: true
-    },
-    acc_email: {
+    acc_phone: {
         type: String,
         required: true
     },
-    acc_phone: {
+    acc_email: {
         type: String,
         required: true
     }

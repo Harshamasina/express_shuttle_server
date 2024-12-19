@@ -31,8 +31,7 @@ const moment = require('moment');
 //                 payment_ref_id: paymentIntent.id,
 //                 booking_date: moment().format('YYYY-MM-DD'),
 //                 acc_id: user._id,
-//                 acc_email: user.email,
-//                 acc_phone: user.phone,
+//                 acc_email: user.email
 //             });
 //             const savedRide = await new_ride.save();
 
