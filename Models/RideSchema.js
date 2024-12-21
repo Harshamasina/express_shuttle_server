@@ -21,6 +21,10 @@ const RidesSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    trip_type: {
+        type: String,
+        required: true
+    },
     pick_up: {
         type: String,
         required: true
@@ -37,14 +41,6 @@ const RidesSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    drop_off_date: {
-        type: String,
-        required: true
-    },
-    drop_off_time: {
-        type: String,
-        required: true
-    },
     return_pick_up: {
         type: String
     },
@@ -57,13 +53,10 @@ const RidesSchema = new mongoose.Schema({
     return_drop_off: {
         type: String
     },
-    return_drop_off_date: {
-        type: String
-    },
-    return_drop_off_time: {
-        type: String
-    },
     flight_no: {
+        type: String
+    },
+    airline: {
         type: String
     },
     acc_id: {
@@ -81,6 +74,9 @@ const RidesSchema = new mongoose.Schema({
     acc_email: {
         type: String,
         required: true
+    },
+    notes: {
+        type: String,
     }
 },
 {timestamps: true});
