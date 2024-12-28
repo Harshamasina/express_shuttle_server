@@ -1,72 +1,83 @@
 const express = require('express');
-const router = express.Router();
-const { default: mongoose } = require('mongoose');
+const router = express.Router(); 
 require('dotenv').config();
-const rideSchema = require('../Models/RideSchema.js');
 const moment = require('moment');
-// const stripe = Stripe('your_stripe_secret_key');
+const RidesModel = require('../Models/RideSchema.js');
+const UserModel = require('../Models/UserSchema.js');
+
+
+const generateTicketId = async () => {
+    let ticketId;
+    let isUnique = false;
+
+    while (!isUnique) {
+        ticketId = `ES${Math.floor(100000 + Math.random() * 900000)}`;
+        const existingRide = await RidesModel.findOne({ ticket_id: ticketId });
+        if (!existingRide) {
+            isUnique = true;
+        }
+    }
+
+    return ticketId;
+};
 
 // Posting Rides
-// router.post('/api/rides', async (req, res) => {
-//     const { amount, currency, source, user_id, ...rideDetails } = req.body;
+router.post('/api/rides', async (req, res) => {
+    try {
+        const { acc_id } = req.body;
+        const user_data = await UserModel.findOne({ firebase_uid: acc_id });
+        if (!user_data) {
+            return res.status(422).json({
+                error: "User Not Found, Please Check your Mail",
+            });
+        }
+        const acc_phone = user_data.phone;
+        const booking_date = moment().format('YYYY-MM-DD');
+        const ticket_id = await generateTicketId();
+        const newRide = new RidesModel({
+            ...req.body,
+            ticket_id,
+            booking_date,
+            acc_phone,
+        });
 
-//     try {
-//         const user = await userSchema.findById(user_id);
-//         if (!user) {
-//             return res.status(404).json({ message: "User not found" });
-//         }
+        const pastRideDetails = {
+            ticket_id,
+            personCount: req.body.traveler_count,
+            booking_date,
+            trip_type: req.body.trip_type,
+            from_location: req.body.from_location,
+            pick_up: req.body.pick_up,
+            pick_up_date: req.body.pick_up_date,
+            pick_up_time: req.body.pick_up_time,
+            to_location: req.body.to_location,
+            drop_off: req.body.drop_off,
+            return_pick_up: req.body.return_pick_up,
+            return_pick_up_date: req.body.return_pick_up_date,
+            return_pick_up_time: req.body.return_pick_up_time,
+            return_drop_off: req.body.return_drop_off,
+            total_amount: req.body.total_amount,
+            payment_ref_id: req.body.payment_ref_id,
+            notes: req.body.notes,
+        };
+        user_data.past_rides.push(pastRideDetails);
 
-//         const paymentIntent = await stripe.paymentIntents.create({
-//             amount: amount * 100,
-//             currency: currency,
-//             payment_method: source,
-//             confirm: true,
-//         });
+        await newRide.save();
+        await user_data.save();
 
-//         if (paymentIntent.status === 'succeeded') {
-//             const new_ride = new rideSchema({
-//                 ...rideDetails,
-//                 payment: amount,
-//                 payment_confirm: 1,
-//                 payment_ref_id: paymentIntent.id,
-//                 booking_date: moment().format('YYYY-MM-DD'),
-//                 acc_id: user._id,
-//                 acc_email: user.email
-//             });
-//             const savedRide = await new_ride.save();
-
-//             const pastRide = {
-//                 ticket_id: rideDetails.ticket_id,
-//                 personCount: rideDetails.traveler_count,
-//                 trip_start_date: rideDetails.pick_up_date,
-//                 trip_return_date: rideDetails.return_pick_up_date,
-//                 pick_up: rideDetails.pick_up,
-//                 drop_off: rideDetails.drop_off,
-//                 return_pick_up: rideDetails.return_pick_up,
-//                 return_drop_off: rideDetails.return_drop_off,
-//                 payment: amount,
-//                 booking_date: moment().format('YYYY-MM-DD'),
-//             };
-
-//             user.past_rides.push(pastRide);
-//             await user.save();
-
-//             res.status(201).json({
-//                 message: "Ride created successfully",
-//                 ride: savedRide,
-//             });
-//         } else {
-//             res.status(400).json({
-//                 message: "Payment failed",
-//             });
-//         }
-//     } catch (err) {
-//         res.status(500).json({
-//             error: err.message,
-//             message: "Failed to process payment or save ride",
-//         });
-//     }
-// });
+        res.status(201).json({
+            success: true,
+            message: "Ride details posted successfully and stored in past rides in users",
+            data: newRide,
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(422).json({
+            error: err,
+            message: "Failed to add Rides information",
+        });
+    }
+});
 
 //Fetching Rides Data
 

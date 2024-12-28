@@ -98,6 +98,27 @@ router.get('/api/fetch_user/:user_email', async (req, res) => {
     }
 });
 
+//Fetch User by Firebase Id
+router.get('/api/fetch_fb_id/:user_id', async (req, res) => {
+    try{
+        const user_id = req.params.user_id;
+        const user_data = await UserModel.findOne({firebase_uid: user_id});
+        if(!user_data){
+            res.status(422).json({
+                error: "User Not Found, Please Check your Mail"
+            });
+        } else {
+            res.status(201).json(user_data);
+        }
+    } catch (err) {
+        // console.log(err);
+        res.status(422).json({
+            error: err,
+            message: "Failed to fetch user information",
+        });
+    }
+});
+
 //Fetching Single User Info using Id
 router.get('/api/fetch_user_by_id/:user_id', async (req, res) => {
     try{

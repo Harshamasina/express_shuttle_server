@@ -3,43 +3,42 @@ const mongoose = require('mongoose');
 const RidesSchema = new mongoose.Schema({
     ticket_id: {
         type: String,
-        required: true
     },
-    payment: {
+    base_amount: {
         type: Number,
-        required: true
+    },
+    total_amount: {
+        type: Number,
     },
     payment_confirm: {
         type: Number,
-        required: true
     },
     payment_ref_id: {
         type: String,
-        required: true
     },
     booking_date: {
         type: String,
-        required: true
     },
     trip_type: {
         type: String,
-        required: true
+    },
+    from_location: {
+        type: String,
     },
     pick_up: {
         type: String,
-        required: true
     },
     pick_up_date: {
         type: String,
-        required: true
     },
     pick_up_time: {
         type: String,
-        required: true
+    },
+    to_location: {
+        type: String,
     },
     drop_off: {
         type: String,
-        required: true
     },
     return_pick_up: {
         type: String
@@ -53,27 +52,20 @@ const RidesSchema = new mongoose.Schema({
     return_drop_off: {
         type: String
     },
-    flight_no: {
-        type: String
-    },
     airline: {
         type: String
     },
     acc_id: {
         type: String,
-        required: true
     },
     traveler_count: {
         type: Number,
-        required: true
     },
     acc_phone: {
         type: String,
-        required: true
     },
     acc_email: {
         type: String,
-        required: true
     },
     notes: {
         type: String,

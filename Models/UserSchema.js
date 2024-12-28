@@ -7,13 +7,25 @@ const pastRidesSchema = new mongoose.Schema({
     personCount: {
         type: Number
     },
-    trip_start_date: {
+    booking_date: {
+        type: String 
+    },
+    trip_type: {
         type: String
     },
-    trip_return_date: {
+    from_location: {
         type: String
     },
     pick_up: {
+        type: String
+    },
+    pick_up_date: {
+        type: String
+    },
+    pick_up_time: {
+        type: String
+    },
+    to_location: {
         type: String
     },
     drop_off: {
@@ -25,11 +37,14 @@ const pastRidesSchema = new mongoose.Schema({
     return_drop_off: {
         type: String
     },
-    payment: {
+    total_amount: {
         type: Number
     },
-    booking_date: {
-        type: String 
+    payment_ref_id: {
+        type: String
+    },
+    notes: {
+        type: String
     }
 });
 
@@ -63,6 +78,9 @@ const UserSchema = new mongoose.Schema(
         user_type: {
             type: String,
             required: true
+        },
+        firebase_uid: {
+            type: String,
         },
         past_rides: [pastRidesSchema]
     },
