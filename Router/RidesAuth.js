@@ -17,7 +17,6 @@ const generateTicketId = async () => {
             isUnique = true;
         }
     }
-
     return ticketId;
 };
 

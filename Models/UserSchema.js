@@ -34,6 +34,12 @@ const pastRidesSchema = new mongoose.Schema({
     return_pick_up: {
         type: String
     },
+    return_pick_up_date: {
+        type: String
+    },
+    return_pick_up_time: {
+        type: String
+    },
     return_drop_off: {
         type: String
     },
