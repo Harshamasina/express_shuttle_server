@@ -1,13 +1,21 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const DB = process.env.MONGODB_URI;
+const DB = process.env.MONGODB_URI_TEST || 'fallback_connection_string';
 
 mongoose.set("strictQuery", false);
-mongoose.connect(DB, {
-    dbName: 'express_shuttle',
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('Database is Successfully Connected');
-}).catch((err) => console.error( 'No Connection', err));
+
+(async () => {
+    try {
+        console.log('Attempting to connect to DB:', DB);
+        await mongoose.connect(DB, {
+            dbName: 'express_shuttle',
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('Database is Successfully Connected');
+    } catch (err) {
+        console.error('Database connection failed:', err.message);
+        console.error('Error cause:', err.cause || 'Unknown');
+    }
+})();

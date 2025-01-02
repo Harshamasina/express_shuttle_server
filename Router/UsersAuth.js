@@ -58,7 +58,8 @@ router.get('/api/search_user/:search', async(req, res) => {
         const userData = await UserModel.find({
             $or: [
                 { email: { $regex: new RegExp(search, 'i') } },
-                { phone: { $regex: new RegExp(search, 'i') } }
+                { phone: { $regex: new RegExp(search, 'i') } },
+                {firebase_uid: { $regex: new RegExp(search, 'i') } }
             ]
         });
         if(userData.length === 0){
@@ -98,6 +99,22 @@ router.get('/api/fetch_user/:user_email', async (req, res) => {
     }
 });
 
+
+// Fetch all Firebase UID's
+router.get('/api/fetch_uids', async (req, res) => {
+    try{
+        const uidData = await UserModel.find({}, { firebase_uid: 1, _id: 0 });
+        const uidArray = uidData.map(user => user.firebase_uid);
+        res.status(201).json(uidArray);
+    } catch (err) {
+        console.log(err);
+        res.status(422).json({
+            error: err,
+            message: "Failed to fetch user id information",
+        });
+    }
+});
+
 //Fetch User by Firebase Id
 router.get('/api/fetch_fb_id/:user_id', async (req, res) => {
     try{
@@ -119,7 +136,7 @@ router.get('/api/fetch_fb_id/:user_id', async (req, res) => {
     }
 });
 
-//Fetching Single User Info using Id
+//Fetching Single User Info using document Id
 router.get('/api/fetch_user_by_id/:user_id', async (req, res) => {
     try{
         const user_id = req.params.user_id;
