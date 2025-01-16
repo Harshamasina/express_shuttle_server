@@ -23,23 +23,35 @@ const generateTicketId = async () => {
 // Posting Rides
 router.post('/api/rides', async (req, res) => {
     try {
-        const { acc_id } = req.body;
+        const { acc_id, payment_result } = req.body;
+
+        // Validate user existence
         const user_data = await UserModel.findOne({ firebase_uid: acc_id });
         if (!user_data) {
             return res.status(422).json({
                 error: "User Not Found, Please Check your Mail",
             });
         }
+
         const acc_phone = user_data.phone;
         const booking_date = moment().format('YYYY-MM-DD');
         const ticket_id = await generateTicketId();
+
+        // Create a new ride
         const newRide = new RidesModel({
             ...req.body,
             ticket_id,
             booking_date,
             acc_phone,
+            payment_result: {
+                payment_id: payment_result.payment_id,
+                payment_status: payment_result.payment_status,
+                paid_at: payment_result.paid_at,
+                payment_email: payment_result.payment_email,
+            },
         });
 
+        // Add ride details to user's past rides
         const pastRideDetails = {
             ticket_id,
             personCount: req.body.traveler_count,
@@ -56,7 +68,7 @@ router.post('/api/rides', async (req, res) => {
             return_pick_up_time: req.body.return_pick_up_time,
             return_drop_off: req.body.return_drop_off,
             total_amount: req.body.total_amount,
-            payment_ref_id: req.body.payment_ref_id,
+            payment_ref_id: payment_result.payment_id,
             notes: req.body.notes,
         };
         user_data.past_rides.push(pastRideDetails);
@@ -70,7 +82,6 @@ router.post('/api/rides', async (req, res) => {
             data: newRide,
         });
     } catch (err) {
-        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to add Rides information",
@@ -79,16 +90,16 @@ router.post('/api/rides', async (req, res) => {
 });
 
 //Fetching Rides Data
-router.get('/api/fetch_rides/:search', async (req, res) => {
+router.get('/api/search_rides/:search', async (req, res) => {
     try{
         const search = req.params.search;
         const rideData = await RidesModel.find({
             $or: [
                 { ticket_id: { $regex: new RegExp(search, 'i') } },
-                { payment_ref_id: { $regex: new RegExp(search, 'i') } },
                 { acc_phone: { $regex: new RegExp(search, 'i') } },
                 { acc_email: { $regex: new RegExp(search, 'i')  } },
-                { acc_id: { $regex: new RegExp(search, 'i')  } }
+                { acc_id: { $regex: new RegExp(search, 'i')  } },
+                // { "payment_result.payment_id": { $regex: new RegExp(search, 'i') } }
             ]
         });
 
@@ -107,8 +118,5 @@ router.get('/api/fetch_rides/:search', async (req, res) => {
         });
     }
 });
-
-
-// Updating Rides Data
 
 module.exports = router;

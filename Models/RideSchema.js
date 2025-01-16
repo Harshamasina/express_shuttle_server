@@ -10,11 +10,19 @@ const RidesSchema = new mongoose.Schema({
     total_amount: {
         type: Number,
     },
-    payment_confirm: {
-        type: Number,
-    },
-    payment_ref_id: {
-        type: String,
+    payment_result: {
+        payment_id: {
+            type: String,
+        },
+        payment_status: {
+            type: String,
+        },
+        paid_at: {
+            type: String,
+        },
+        payment_email: {
+            type: String,
+        },
     },
     booking_date: {
         type: String,
