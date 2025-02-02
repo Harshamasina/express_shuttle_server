@@ -157,4 +157,6 @@ router.get('/api/fetch_user_by_id/:user_id', async (req, res) => {
     }
 });
 
+// Updating User
+
 module.exports = router;

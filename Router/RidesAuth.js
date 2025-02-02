@@ -91,29 +91,33 @@ router.post('/api/rides', async (req, res) => {
 
 //Fetching Rides Data
 router.get('/api/search_rides/:search', async (req, res) => {
-    try{
+    try {
         const search = req.params.search;
+        console.log('Searching for:', search);
+
         const rideData = await RidesModel.find({
             $or: [
                 { ticket_id: { $regex: new RegExp(search, 'i') } },
                 { acc_phone: { $regex: new RegExp(search, 'i') } },
-                { acc_email: { $regex: new RegExp(search, 'i')  } },
-                { acc_id: { $regex: new RegExp(search, 'i')  } },
-                // { "payment_result.payment_id": { $regex: new RegExp(search, 'i') } }
+                { acc_email: { $regex: new RegExp(search, 'i') } },
+                { acc_id: { $regex: new RegExp(search, 'i') } },
+                { 'payment_result.payment_id': search }
             ]
         });
 
-        if(rideData.length === 0){
-            res.status(422).json({
-                error: "Can't find Ride Information",
+        console.log('Found rides:', rideData.length);
+
+        if(rideData.length === 0) {
+            return res.status(404).json({
+                error: `No rides found matching search term: ${search}`,
             });
-        } else {
-            res.status(200).json(rideData);
         }
+        
+        res.status(200).json(rideData);
     } catch (err) {
-        console.log(err);
-        res.status(422).json({
-            error: err,
+        console.log('Search error:', err);
+        res.status(500).json({
+            error: err.message,
             message: "Failed to fetch Rides information",
         });
     }

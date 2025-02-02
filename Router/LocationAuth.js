@@ -56,8 +56,6 @@ router.get('/api/fetch_all_locations', async (req, res) => {
     }
 });
 
-//Deleting Drop Off and Pick Up Location
-
 
 //Updating Drop off and Pick Up Location
 router.patch('/api/update_location/:id', async (req, res) => {
