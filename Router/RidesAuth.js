@@ -93,7 +93,6 @@ router.post('/api/rides', async (req, res) => {
 router.get('/api/search_rides/:search', async (req, res) => {
     try {
         const search = req.params.search;
-        console.log('Searching for:', search);
 
         const rideData = await RidesModel.find({
             $or: [
@@ -105,11 +104,9 @@ router.get('/api/search_rides/:search', async (req, res) => {
             ]
         });
 
-        console.log('Found rides:', rideData.length);
-
         if(rideData.length === 0) {
             return res.status(404).json({
-                error: `No rides found matching search term: ${search}`,
+                error: `No rides found matching term: ${search}`,
             });
         }
         
