@@ -13,6 +13,7 @@ app.use(require('./Router/RidesAuth'));
 app.use(require('./Router/LocationAuth'));
 app.use(require('./Router/ContactAuth'));
 app.use(require('./Router/RideScheduleAuth'));
+app.use(require('./Router/RideCostAuth'));
 
 app.listen(5000, () => {
     console.log(`server is running at port 5000`);

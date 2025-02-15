@@ -41,7 +41,7 @@ router.post('/api/users', async (req, res) => {
 //Fetching all Users Info
 router.get('/api/fetch_all_users', async (req, res) => {
     try{
-        const users_data = await UserModel.find({}).sort({ createdAt: -1 });
+        const users_data = await UserModel.find({}, 'name email phone dob user_type firebase_uid').sort({ createdAt: -1 });
         res.status(201).json(users_data);
     } catch (err) {
         res.status(422).json({
@@ -98,7 +98,6 @@ router.get('/api/fetch_user/:user_email', async (req, res) => {
         });
     }
 });
-
 
 // Fetch all Firebase UID's
 router.get('/api/fetch_uids', async (req, res) => {

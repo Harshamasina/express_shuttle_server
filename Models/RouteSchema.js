@@ -30,7 +30,7 @@ const PickUpTimeSchema = new mongoose.Schema({
     }
 });
 
-const RideScheduleSchema = new mongoose.Schema({
+const RouteScheduleSchema = new mongoose.Schema({
     ride: {
         type: String,
         required: true
@@ -59,23 +59,7 @@ const RideScheduleSchema = new mongoose.Schema({
         type: [String],
         required: true
     },
-    return_cost: {
-        type: Number,
-        required: true
-    },
-    return_pick_up: {
-        type: [String],
-        required: true
-    },
-    return_pick_info: {
-        type: [PickUpTimeSchema],
-        default: []
-    },
-    return_drop_off: {
-        type: [String],
-        required: true
-    }
 }, { timestamps: true });
 
-const RideScheduleModel = mongoose.model('schedules', RideScheduleSchema);
-module.exports = RideScheduleModel;
+const RouteScheduleModel = mongoose.model('routes', RouteScheduleSchema);
+module.exports = RouteScheduleModel;
