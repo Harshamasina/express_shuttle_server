@@ -26,7 +26,15 @@ router.post('/api/message', async (req, res) => {
 router.get('/api/fetch_messages', async (req, res) => {
     try {
         const messages_data = await ContactModel.find({});
-        return res.status(201).json({messages_data});
+        const eep_messages = messages_data.filter(msg => msg.business_name === "EEP");
+        const ewc_messages = messages_data.filter(msg => msg.business_name === "EWC");
+        const ess_messages = messages_data.filter(msg => msg.business_name === "ESS");
+
+        return res.status(200).json({
+            EEP: eep_messages,
+            EWC: ewc_messages,
+            ESS: ess_messages
+        });
     } catch (err) {
         res.status(422).json({
             error: err,

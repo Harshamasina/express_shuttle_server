@@ -19,6 +19,9 @@ const ContactSchema = new mongoose.Schema({
     },
     message: {
         type: String
+    },
+    business_name: {
+        type: String
     }
 });
 
