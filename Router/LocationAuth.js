@@ -73,6 +73,7 @@ router.patch('/api/update_location/:id', async (req, res) => {
             return res.status(404).json({message: "Location Not Found"});
         }
         res.status(201).json(updatedLocation);
+        
     } catch (err) {
         res.status(500).json({
             error: err,

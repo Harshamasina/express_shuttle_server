@@ -72,6 +72,9 @@ const RidesSchema = new mongoose.Schema({
     acc_phone: {
         type: String,
     },
+    acc_name: {
+        type: String,
+    },
     acc_email: {
         type: String,
     },

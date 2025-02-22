@@ -4,8 +4,6 @@ require('dotenv').config();
 const moment = require('moment');
 const RidesModel = require('../Models/RideSchema.js');
 const UserModel = require('../Models/UserSchema.js');
-const RouteScheduleModel = require('../Models/RouteSchema.js');
-
 
 const generateTicketId = async () => {
     let ticketId;
@@ -49,6 +47,7 @@ router.post('/api/rides', async (req, res) => {
         }
 
         const acc_phone = user_data.phone;
+        const acc_name = user_data.name;
         const booking_date = moment().format('YYYY-MM-DD');
         const ticket_id = await generateTicketId();
 
@@ -58,6 +57,7 @@ router.post('/api/rides', async (req, res) => {
             ticket_id,
             booking_date,
             acc_phone,
+            acc_name,
             payment_result: {
                 payment_id: payment_result.payment_id,
                 payment_status: payment_result.payment_status,
@@ -91,63 +91,6 @@ router.post('/api/rides', async (req, res) => {
         // Save new ride
         await newRide.save();
         await user_data.save();
-
-        // **Find the Correct Ride Schedule Using RouteScheduleModel**
-        const rideSchedule = await RouteScheduleModel.findOne({ from_location, to_location });
-
-        if (!rideSchedule) {
-            return res.status(404).json({ error: "Ride schedule not found" });
-        }
-
-        // **Function to Update Ride Schedule Collection**
-        const updateRideSchedule = async (schedule, selected_time, selected_date) => {
-            const scheduleInfo = schedule.pick_up_info.find(info => info.pick_up_time === selected_time);
-        
-            if (!scheduleInfo) {
-                return res.status(404).json({ error: "Pick-up time not found in schedule" });
-            }
-
-            // Format date as "YYYY-MM-DD" to avoid "T00:00:00.000Z"
-            const formattedDate = moment(selected_date).format('YYYY-MM-DD');
-
-            // Find existing date entry for the given date
-            let dateEntryIndex = scheduleInfo.date_info.findIndex(date => date.pick_up_date === formattedDate);
-
-            if (dateEntryIndex === -1) {
-                // Create a new entry if no existing date entry is found
-                scheduleInfo.date_info.push({
-                    pick_up_date: formattedDate, // Store as "YYYY-MM-DD"
-                    total_seats: 11, // Default total seats
-                    seats_remaining: 11 - traveler_count, // Deduct booked seats
-                    ticket_ids: [ticket_id]
-                });
-            } else {
-                // Update existing entry
-                scheduleInfo.date_info[dateEntryIndex].seats_remaining -= traveler_count;
-                scheduleInfo.date_info[dateEntryIndex].ticket_ids.push(ticket_id);
-            }
-
-            await schedule.save();
-        };                
-
-        // **Update pick-up schedule for one-way trip**
-        if (pick_up_time && pick_up_date) {
-            await updateRideSchedule(rideSchedule, pick_up_time, pick_up_date);
-        }
-
-        // **Handle Return Ride for Round Trip**
-        if (trip_type === "return" && return_pick_up_time && return_pick_up_date) {
-            const returnRideSchedule = await RouteScheduleModel.findOne({
-                from_location: to_location, 
-                to_location: from_location
-            });
-
-            if (!returnRideSchedule) {
-                return res.status(404).json({ error: "Return ride schedule not found" });
-            }
-
-            await updateRideSchedule(returnRideSchedule, return_pick_up_time, return_pick_up_date);
-        }
 
         res.status(201).json({
             success: true,
@@ -209,6 +152,165 @@ router.get('/api/fetch_ride/:search', async (req, res) => {
         res.status(500).json({
             error: err.message,
             message: "Failed to fetch Ride Information"
+        });
+    }
+});
+
+router.get('/api/fetch_update_ride_details/:ticket_id', async (req, res) => {
+    try {
+      const { ticket_id } = req.params;
+      const ride_data = await RidesModel.findOne(
+        { ticket_id },
+        'trip_type from_location to_location pick_up drop_off pick_up_time pick_up_date return_pick_up return_pick_up_date return_pick_up_time return_drop_off'
+      );
+  
+      if (!ride_data) {
+        return res.status(404).json({
+          error: "Ride Not Found, Please Check Ticket ID"
+        });
+      }
+      return res.status(200).json(ride_data);
+    } catch(err) {
+      return res.status(500).json({
+        error: err.message,
+        message: "Failed to fetch ride information"
+      });
+    }
+});
+
+router.get('/api/fetch_rides_by_date/:date', async (req, res) => {
+    try {
+        const date = req.params.date;
+        if (!date) {
+            return res.status(400).json({ message: "Invalid date parameter" });
+        }
+
+        const rides = await RidesModel.find({
+            $or: [
+                { pick_up_date: date },
+                { return_pick_up_date: date }
+            ]
+        }).lean();
+
+        if (!rides || rides.length === 0) {
+            return res.status(404).json({ message: "No rides found for the given date" });
+        }
+
+        const routes = {
+            "RLA-STL": { "5:00 AM": [], "12:00 PM": [], "5:00 PM": [] },
+            "STL-RLA": { "8:00 AM": [], "2:00 PM": [], "7:00 PM": [] },
+            "RLA-CLB": { "5:00 AM": [], "12:00 PM": [], "5:00 PM": [] },
+            "CLB-RLA": { "7:00 PM": [] }
+        };
+
+        rides.forEach(ride => {
+            if (!ride.pick_up_time) {
+                console.log("Skipping ride due to missing pick_up_time:", ride);
+                return;
+            }
+            const rideEntry = {
+                trip_type: ride.trip_type,
+                ticket_id: ride.ticket_id,
+                pick_up: ride.pick_up,
+                drop_off: ride.drop_off,
+                airline: ride.airline,
+                traveler_count: ride.traveler_count,
+                acc_name: ride.acc_name,
+                acc_phone: ride.acc_phone,
+                acc_email: ride.acc_email,
+                notes: ride.notes
+            };
+
+            if (ride.from_location === "RLA" && ride.to_location === "STL" && routes["RLA-STL"][ride.pick_up_time]) {
+                routes["RLA-STL"][ride.pick_up_time].push(rideEntry);
+            } else if (ride.from_location === "STL" && ride.to_location === "RLA" && routes["STL-RLA"][ride.pick_up_time]) {
+                routes["STL-RLA"][ride.pick_up_time].push(rideEntry);
+            } else if (ride.from_location === "RLA" && ride.to_location === "CLB" && routes["RLA-CLB"][ride.pick_up_time]) {
+                routes["RLA-CLB"][ride.pick_up_time].push(rideEntry);
+            } else if (ride.from_location === "CLB" && ride.to_location === "RLA" && routes["CLB-RLA"][ride.pick_up_time]) {
+                routes["CLB-RLA"][ride.pick_up_time].push(rideEntry);
+            }
+
+            // Handle return trips
+            if (ride.trip_type === "return" && ride.return_pick_up_date === date && ride.return_pick_up_time) {
+                const returnRideEntry = {
+                    trip_type: ride.trip_type,
+                    ticket_id: ride.ticket_id,
+                    pick_up: ride.return_pick_up,
+                    drop_off: ride.return_drop_off,
+                    airline: ride.airline,
+                    traveler_count: ride.traveler_count,
+                    acc_name: ride.acc_name,
+                    acc_phone: ride.acc_phone,
+                    acc_email: ride.acc_email,
+                    notes: ride.notes
+                };
+
+                if (ride.to_location === "RLA" && ride.from_location === "STL" && routes["STL-RLA"][ride.return_pick_up_time]) {
+                    routes["STL-RLA"][ride.return_pick_up_time].push(returnRideEntry);
+                } else if (ride.to_location === "STL" && ride.from_location === "RLA" && routes["RLA-STL"][ride.return_pick_up_time]) {
+                    routes["RLA-STL"][ride.return_pick_up_time].push(returnRideEntry);
+                } else if (ride.to_location === "CLB" && ride.from_location === "RLA" && routes["RLA-CLB"][ride.return_pick_up_time]) {
+                    routes["RLA-CLB"][ride.return_pick_up_time].push(returnRideEntry);
+                } else if (ride.to_location === "RLA" && ride.from_location === "CLB" && routes["CLB-RLA"][ride.return_pick_up_time]) {
+                    routes["CLB-RLA"][ride.return_pick_up_time].push(returnRideEntry);
+                }
+            }
+        });
+
+        // Add message for empty time slots
+        for (const route in routes) {
+            for (const time in routes[route]) {
+                if (routes[route][time].length === 0) {
+                    routes[route][time] = [{ message: "No rides available for this date and time" }];
+                }
+            }
+        }
+
+        res.status(200).json({date, routes});
+    } catch (err) {
+        res.status(500).json({
+            error: err.message,
+            message: "Failed to fetch Ride Information"
+        });
+    }
+});
+
+router.patch('/api/update_ride_details/:ticket_id', async (req, res) => {
+    try{
+        const ticket_id = req.params.ticket_id;
+        const updates = {};
+
+        const allowedUpdates = [
+            'pick_up',
+            'drop_off',
+            'pick_up_time',
+            'pick_up_date',
+            'return_pick_up',
+            'return_pick_up_date',
+            'return_pick_up_time',
+            'return_drop_off'
+        ];
+
+        allowedUpdates.forEach((field) => {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+                updates[field] = req.body[field];
+            }
+        });
+
+        const updatedRide = await RidesModel.findOneAndUpdate({ ticket_id: ticket_id }, updates, {new: true, runValidators: true});
+        
+        if(!updatedRide){
+            return res.status(404).json({message: "Ride Not Found"});
+        }
+        res.status(201).json({
+            "message": "Ride Succesfully Updated",
+            updatedRide
+        });
+    } catch (err){
+        res.status(500).json({
+            error: err.message,
+            message: "Failed to update ride details"
         });
     }
 });
