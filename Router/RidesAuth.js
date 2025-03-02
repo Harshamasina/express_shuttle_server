@@ -4,6 +4,7 @@ require('dotenv').config();
 const moment = require('moment');
 const RidesModel = require('../Models/RideSchema.js');
 const UserModel = require('../Models/UserSchema.js');
+const RouteScheduleModel = require('../Models/RouteSchema');
 
 const generateTicketId = async () => {
     let ticketId;
@@ -158,119 +159,156 @@ router.get('/api/fetch_ride/:search', async (req, res) => {
 
 router.get('/api/fetch_update_ride_details/:ticket_id', async (req, res) => {
     try {
-      const { ticket_id } = req.params;
-      const ride_data = await RidesModel.findOne(
-        { ticket_id },
-        'trip_type from_location to_location pick_up drop_off pick_up_time pick_up_date return_pick_up return_pick_up_date return_pick_up_time return_drop_off'
-      );
-  
-      if (!ride_data) {
-        return res.status(404).json({
-          error: "Ride Not Found, Please Check Ticket ID"
-        });
-      }
-      return res.status(200).json(ride_data);
+        const { ticket_id } = req.params;
+        const ride_data = await RidesModel.findOne(
+            { ticket_id },
+            'trip_type from_location to_location pick_up drop_off pick_up_time pick_up_date return_pick_up return_pick_up_date return_pick_up_time return_drop_off'
+        );
+    
+        if (!ride_data) {
+            return res.status(404).json({
+                error: "Ride Not Found, Please Check Ticket ID and try again"
+            });
+        }
+
+        return res.status(200).json(ride_data);
     } catch(err) {
-      return res.status(500).json({
-        error: err.message,
-        message: "Failed to fetch ride information"
-      });
+        return res.status(500).json({
+            error: err.message,
+            message: "Failed to fetch ride information"
+        });
     }
 });
 
 router.get('/api/fetch_rides_by_date/:date', async (req, res) => {
     try {
-        const date = req.params.date;
+        const date = req.params.date?.trim();
         if (!date) {
             return res.status(400).json({ message: "Invalid date parameter" });
         }
 
+        // 1) Fetch the route schedules to build the routes/time structure dynamically
+        const scheduleData = await RouteScheduleModel.find({});
+        if (!scheduleData || scheduleData.length === 0) {
+            return res.status(404).json({ message: "No route schedules found" });
+        }
+        
+        const routes = {};
+        scheduleData.forEach(scheduleDoc => {
+            // e.g. "RLA - STL", "STL - RLA", etc.
+            const routeName = scheduleDoc.ride; 
+            routes[routeName] = {};
+            // For each pick_up_time, create an empty array
+            scheduleDoc.pick_up_info.forEach(info => {
+                routes[routeName][info.pick_up_time] = [];
+            });
+        });
+
+        // 2) Fetch the rides/bookings for the given date from your RidesModel
+        //    (both outbound or return date can be = date)
         const rides = await RidesModel.find({
             $or: [
-                { pick_up_date: date },
-                { return_pick_up_date: date }
+                { pick_up_date: date },       // rides whose outbound date is date
+                { return_pick_up_date: date } // rides whose return date is date
             ]
         }).lean();
 
         if (!rides || rides.length === 0) {
-            return res.status(404).json({ message: "No rides found for the given date" });
+            // Even if no rides found, we still want to return the route/time structure
+            // with "No rides available" for each slot
+            for (const routeName in routes) {
+                for (const timeKey in routes[routeName]) {
+                    routes[routeName][timeKey].push({
+                        message: "No rides available for this date and time"
+                    });
+                }
+            }
+            return res.status(200).json({ date, routes });
         }
 
-        const routes = {
-            "RLA-STL": { "5:00 AM": [], "12:00 PM": [], "5:00 PM": [] },
-            "STL-RLA": { "8:00 AM": [], "2:00 PM": [], "7:00 PM": [] },
-            "RLA-CLB": { "5:00 AM": [], "12:00 PM": [], "5:00 PM": [] },
-            "CLB-RLA": { "7:00 PM": [] }
-        };
-
-        rides.forEach(ride => {
-            if (!ride.pick_up_time) {
-                console.log("Skipping ride due to missing pick_up_time:", ride);
+        // Helper function to safely push an entry into the correct route/time
+        function pushRideEntry(routeKey, timeKey, entry) {
+            if (!routes[routeKey]) {
+                // That route might not exist in scheduleData
+                // e.g. a new route that isn't in the schedule yet, or a mismatch
+                console.warn(`Route [${routeKey}] not found in scheduleData.`);
                 return;
             }
-            const rideEntry = {
+            if (!routes[routeKey][timeKey]) {
+                // That time might not exist for this route
+                console.warn(`Time [${timeKey}] not found in route [${routeKey}].`);
+                return;
+            }
+            routes[routeKey][timeKey].push(entry);
+        }
+
+        // 3) Loop over each ride and place it into the correct route/time
+        rides.forEach(ride => {
+            // Build an object representing the “outbound” portion
+            const outboundEntry = {
                 trip_type: ride.trip_type,
                 ticket_id: ride.ticket_id,
-                pick_up: ride.pick_up,
-                drop_off: ride.drop_off,
-                airline: ride.airline,
+                pick_up:   ride.pick_up,
+                drop_off:  ride.drop_off,
+                airline:   ride.airline,
                 traveler_count: ride.traveler_count,
-                acc_name: ride.acc_name,
+                acc_name:  ride.acc_name,
                 acc_phone: ride.acc_phone,
                 acc_email: ride.acc_email,
-                notes: ride.notes
+                notes:     ride.notes
             };
 
-            if (ride.from_location === "RLA" && ride.to_location === "STL" && routes["RLA-STL"][ride.pick_up_time]) {
-                routes["RLA-STL"][ride.pick_up_time].push(rideEntry);
-            } else if (ride.from_location === "STL" && ride.to_location === "RLA" && routes["STL-RLA"][ride.pick_up_time]) {
-                routes["STL-RLA"][ride.pick_up_time].push(rideEntry);
-            } else if (ride.from_location === "RLA" && ride.to_location === "CLB" && routes["RLA-CLB"][ride.pick_up_time]) {
-                routes["RLA-CLB"][ride.pick_up_time].push(rideEntry);
-            } else if (ride.from_location === "CLB" && ride.to_location === "RLA" && routes["CLB-RLA"][ride.pick_up_time]) {
-                routes["CLB-RLA"][ride.pick_up_time].push(rideEntry);
+            // If the outbound leg is on this date:
+            if (ride.pick_up_date === date) {
+                const routeName = `${ride.from_location} - ${ride.to_location}`;
+                // Only push if pick_up_time is defined
+                if (ride.pick_up_time) {
+                    pushRideEntry(routeName, ride.pick_up_time, outboundEntry);
+                }
             }
 
-            // Handle return trips
-            if (ride.trip_type === "return" && ride.return_pick_up_date === date && ride.return_pick_up_time) {
-                const returnRideEntry = {
+            // If it’s a return trip and the return date = this date
+            if (ride.trip_type === "return" && ride.return_pick_up_date === date) {
+                // Build the “return” portion
+                const returnEntry = {
                     trip_type: ride.trip_type,
                     ticket_id: ride.ticket_id,
-                    pick_up: ride.return_pick_up,
-                    drop_off: ride.return_drop_off,
-                    airline: ride.airline,
+                    pick_up:   ride.return_pick_up,
+                    drop_off:  ride.return_drop_off,
+                    airline:   ride.airline,
                     traveler_count: ride.traveler_count,
-                    acc_name: ride.acc_name,
+                    acc_name:  ride.acc_name,
                     acc_phone: ride.acc_phone,
                     acc_email: ride.acc_email,
-                    notes: ride.notes
+                    notes:     ride.notes
                 };
-
-                if (ride.to_location === "RLA" && ride.from_location === "STL" && routes["STL-RLA"][ride.return_pick_up_time]) {
-                    routes["STL-RLA"][ride.return_pick_up_time].push(returnRideEntry);
-                } else if (ride.to_location === "STL" && ride.from_location === "RLA" && routes["RLA-STL"][ride.return_pick_up_time]) {
-                    routes["RLA-STL"][ride.return_pick_up_time].push(returnRideEntry);
-                } else if (ride.to_location === "CLB" && ride.from_location === "RLA" && routes["RLA-CLB"][ride.return_pick_up_time]) {
-                    routes["RLA-CLB"][ride.return_pick_up_time].push(returnRideEntry);
-                } else if (ride.to_location === "RLA" && ride.from_location === "CLB" && routes["CLB-RLA"][ride.return_pick_up_time]) {
-                    routes["CLB-RLA"][ride.return_pick_up_time].push(returnRideEntry);
+                // The return route is effectively reversed
+                // If original route was RLA -> STL, return is STL -> RLA
+                const reverseRouteName = `${ride.to_location} - ${ride.from_location}`;
+                if (ride.return_pick_up_time) {
+                    pushRideEntry(reverseRouteName, ride.return_pick_up_time, returnEntry);
                 }
             }
         });
 
-        // Add message for empty time slots
-        for (const route in routes) {
-            for (const time in routes[route]) {
-                if (routes[route][time].length === 0) {
-                    routes[route][time] = [{ message: "No rides available for this date and time" }];
+        // 4) Fill empty slots with a "No rides available" message
+        for (const routeName in routes) {
+            for (const timeKey in routes[routeName]) {
+                if (routes[routeName][timeKey].length === 0) {
+                    routes[routeName][timeKey].push({
+                        message: "No rides available for this date and time"
+                    });
                 }
             }
         }
 
-        res.status(200).json({date, routes});
+        // 5) Return final data
+        return res.status(200).json({ date, routes });
+
     } catch (err) {
-        res.status(500).json({
-            error: err.message,
+        console.error(err);
+        return res.status(500).json({
+            error: err.message || err,
             message: "Failed to fetch Ride Information"
         });
     }
