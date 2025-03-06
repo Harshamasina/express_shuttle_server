@@ -353,4 +353,124 @@ router.patch('/api/update_ride_details/:ticket_id', async (req, res) => {
     }
 });
 
+router.get('/api/fetch_rides_queries', async (req, res) => {
+    try {
+      // 1) Parse & validate query params
+      const rawToLocation = req.query.to_location ?? "";
+      const rawFromLocation = req.query.from_location ?? "";
+      const rawDate = req.query.date ?? "";
+      const rawTime = req.query.time ?? "";
+  
+      // Trim to remove leading/trailing spaces
+      const to_location = rawToLocation.trim();
+      const from_location = rawFromLocation.trim();
+      const date = rawDate.trim();
+      const time = rawTime.trim();
+  
+      if (!to_location || !from_location || !date || !time) {
+        return res.status(400).json({
+          message: "Missing required query parameters: to_location, from_location, date, time",
+        });
+      }
+  
+      console.log("=== FETCH_RIDES_QUERIES DEBUG INFO ===");
+      console.log("User Query:", { from_location, to_location, date, time });
+  
+      // 2) Build the $or query
+      //   (A) Oneway or Return on the 'outbound' side
+      //   (B) Return on the 'return' side (reverse route/time)
+      const rides = await RidesModel.find({
+        $or: [
+          // (A1) Oneway
+          {
+            trip_type: 'oneway',
+            from_location,
+            to_location,
+            pick_up_date: date,
+            pick_up_time: { $regex: new RegExp(`^${time}$`, 'i') },
+          },
+          // (A2) Return outbound
+          {
+            trip_type: 'return',
+            from_location,
+            to_location,
+            pick_up_date: date,
+            pick_up_time: { $regex: new RegExp(`^${time}$`, 'i') },
+          },
+          // (B) Return rides: return leg is reversed
+          {
+            trip_type: 'return',
+            from_location: to_location,
+            to_location: from_location,
+            return_pick_up_date: date,
+            return_pick_up_time: { $regex: new RegExp(`^${time}$`, 'i') },
+          },
+        ],
+      })
+        .select(
+          "trip_type ticket_id traveler_count pick_up drop_off " +
+          "return_pick_up return_drop_off pick_up_date pick_up_time " +
+          "return_pick_up_date return_pick_up_time " +
+          "acc_name acc_phone acc_email notes"
+        );
+  
+      if (!rides || rides.length === 0) {
+        console.log("No matching documents found in RidesModel for these params.");
+        return res.status(404).json({
+          message: "No rides found matching the query parameters.",
+        });
+      }
+  
+      // 3) Post-process: rename return_pick_up->pick_up, return_drop_off->drop_off if it matched the RETURN leg
+      //    That means doc.from_location=== user.to_location, doc.to_location=== user.from_location,
+      //    doc.return_pick_up_date=== user.date, doc.return_pick_up_time=== user.time
+      const results = rides.map((doc) => {
+        const ride = doc.toObject();
+  
+        const isReturnMatch = (
+          ride.trip_type === "return" &&
+          (ride.from_location?.trim() === to_location) &&
+          (ride.to_location?.trim() === from_location) &&
+          (ride.return_pick_up_date?.trim() === date) &&
+          // e.g. "2:00 PM" vs. "2:00 pm": we do a case-insensitive check
+          ride.return_pick_up_time?.trim().toLowerCase() === time.toLowerCase()
+        );
+  
+        console.log("\n--- Ride Debug ---");
+        console.log("Doc _id:", ride._id);
+        console.log("Doc trip_type:", ride.trip_type);
+        console.log("Doc from_location:", ride.from_location, "Doc to_location:", ride.to_location);
+        console.log("Doc return_pick_up_date:", ride.return_pick_up_date, "return_pick_up_time:", ride.return_pick_up_time);
+        console.log("Is Return-Leg Match:", isReturnMatch);
+  
+        if (isReturnMatch) {
+          ride.pick_up = ride.return_pick_up;
+          ride.drop_off = ride.return_drop_off;
+        }
+  
+        // Remove fields that you don't want in final output
+        delete ride.return_pick_up;
+        delete ride.return_drop_off;
+        delete ride.return_pick_up_date;
+        delete ride.return_pick_up_time;
+  
+        delete ride.pick_up_date;
+        delete ride.pick_up_time;
+  
+        return ride;
+      });
+  
+      console.log("Final results length:", results.length);
+  
+      return res.status(200).json(results);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        error: err.message,
+        message: "Failed to fetch ride details.",
+      });
+    }
+  });
+   
+
 module.exports = router;
