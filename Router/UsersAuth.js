@@ -30,7 +30,6 @@ router.post('/api/users', async (req, res) => {
             data: savedUser,
         });
     } catch (err) {
-        console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to add user information",
@@ -70,7 +69,6 @@ router.get('/api/search_user/:search', async(req, res) => {
             res.status(200).json(userData);
         }
     } catch (err) {
-        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user information",
@@ -91,7 +89,6 @@ router.get('/api/fetch_user/:user_email', async (req, res) => {
             res.status(201).json(user_data);
         }
     } catch (err) {
-        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user information",
@@ -106,7 +103,6 @@ router.get('/api/fetch_uids', async (req, res) => {
         const uidArray = uidData.map(user => user.firebase_uid);
         res.status(201).json(uidArray);
     } catch (err) {
-        console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user id information",
@@ -127,7 +123,6 @@ router.get('/api/fetch_fb_id/:user_id', async (req, res) => {
             res.status(201).json(user_data);
         }
     } catch (err) {
-        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user information",
@@ -148,7 +143,6 @@ router.get('/api/fetch_user_by_id/:user_id', async (req, res) => {
             res.status(201).json(user_data);
         }
     } catch (err) {
-        // console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user information",

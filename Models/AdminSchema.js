@@ -5,6 +5,10 @@ const AdminSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    dob:{
+        type: String,
+        required: true
+    },
     employee_id: {
         type: String,
         required: true
@@ -22,6 +26,9 @@ const AdminSchema = new mongoose.Schema({
         required: true
     },
     designation: {
+        type: String
+    },
+    address: {
         type: String
     },
     firebase_uid: {

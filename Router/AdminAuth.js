@@ -6,26 +6,39 @@ const AdminModel = require("../Models/AdminSchema");
 
 router.post('/api/admins', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const admin_email = await AdminModel.findOne({ email });
+        const { email, password, employee_id, phone } = req.body;
+        const duplicateAdmin = await AdminModel.findOne({
+            $or: [
+                { email },
+                { employee_id },
+                { phone }
+            ]
+        });
 
-        if(admin_email){
-            return res.status(422).json({
-                error: "admin already exists",
-            });
+        if (duplicateAdmin) {
+            if (duplicateAdmin.email === email) {
+                return res.status(422).json({ error: "Admin already exists" });
+            }
+            if (duplicateAdmin.employee_id === employee_id) {
+                return res.status(422).json({ error: "Employee Id already exists" });
+            }
+            if (duplicateAdmin.phone === phone) {
+                return res.status(422).json({ error: "Phone Number already exists" });
+            }
         }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const admin = new AdminModel({
             ...req.body,
             password: hashedPassword,
         });
+
         const savedAdmin = await admin.save();
         res.status(201).json({
             message: "Admin saved successfully",
             data: savedAdmin,
         });
     } catch (err) {
-        console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to add admin information",
@@ -46,7 +59,37 @@ router.get('/api/fetch_admin_uid/:admin_uid', async (req, res) => {
             res.status(201).json(admin_data);
         }
     } catch (err) {
-        // console.log(err);
+        res.status(422).json({
+            error: err,
+            message: "Failed to fetch admin information",
+        });
+    }
+});
+
+//Fetch Admin Account Details
+router.get('/api/fetch_admin_acc/:search', async (req, res) => {
+    try{
+        const search = req.params.search;
+
+        const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapeRegex(search), 'i');
+
+        const adminData = await AdminModel.find({
+            $or: [
+                { phone: { $regex: regex } },
+                { email: { $regex: regex } },
+                { firebase_uid: { $regex: regex } }
+            ]
+        });
+
+        if(!adminData){
+            res.status(422).json({
+                error: "User Not Found, Please Check user ID"
+            });
+        } else {
+            res.status(201).json(adminData);
+        }
+    } catch (err) {
         res.status(422).json({
             error: err,
             message: "Failed to fetch admin information",
@@ -61,7 +104,6 @@ router.get('/api/fetch_admins_no', async (req, res) => {
         const phoneArray = phoneData.map(admin => admin.phone);
         res.status(201).json(phoneArray);
     } catch (err) {
-        console.log(err);
         res.status(422).json({
             error: err,
             message: "Failed to fetch user id information",
